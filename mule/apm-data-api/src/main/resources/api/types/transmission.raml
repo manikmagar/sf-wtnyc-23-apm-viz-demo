@@ -1,0 +1,75 @@
+#%RAML 1.0 DataType
+displayName: Transmission
+properties:
+  sourceDocType:
+    type: !include docType.raml
+    displayName: Source Doc Type
+    required: true
+  targetDocType:
+    type: !include docType.raml
+    displayName: Target Doc Type
+    required: true
+  targetEndpoint:
+    type: object
+    displayName: Target Endpoint
+    required: true
+    properties:
+      endpointType:
+        type: string
+        displayName: Endpoint Type
+        required: true
+        examples:
+          Ex1: http
+    examples:
+      Ex1:
+        endpointType: http
+  partnerFrom:
+    type: !include partnerMinimal.raml
+    displayName: Partner From
+    required: true
+  partnerTo:
+    type: !include partnerMinimal.raml
+    displayName: Partner From
+    required: true
+  id:
+    type: string
+    displayName: Id
+    required: true
+    examples:
+      Ex1: b1d20d96-5040-4475-bc9d-f12ef47f5cc3
+  status:
+    type: string
+    displayName: Status
+    required: true
+    examples:
+      Ex1: DELIVERED
+  dateReceived:
+    type: datetime
+    displayName: Date Received
+    required: true
+    examples:
+      Ex1: 2023-04-25T01:52:12.040Z
+  direction:
+    type: string
+    displayName: Direction
+    required: true
+    examples:
+      Ex1: INBOUND
+  formatType:
+    type: string
+    displayName: Format Type
+    required: true
+    examples:
+      Ex1: X12
+  receivingEndpointType:
+    type: string
+    displayName: Receiving Endpoint Type
+    required: true
+    examples:
+      Ex1: http
+  messageCount:
+    type: number
+    displayName: Message Count
+    required: true
+    examples:
+      Ex1: 1

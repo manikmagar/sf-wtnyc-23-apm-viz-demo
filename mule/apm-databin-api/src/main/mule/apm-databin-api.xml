@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:api-gateway="http://www.mulesoft.org/schema/mule/api-gateway" xmlns:tls="http://www.mulesoft.org/schema/mule/tls"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/mule/api-gateway/current/mule-api-gateway.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="6a736e79-7e44-41e7-ab0b-d38891d6a24b" >
+		<http:listener-connection protocol="HTTPS" host="0.0.0.0" port="${https.port}" >
+			<tls:context >
+				<tls:key-store type="pkcs12" path="keystore.jks" keyPassword="password" password="password" />
+			</tls:context>
+		</http:listener-connection>
+	</http:listener-config>
+	<configuration-properties doc:name="Configuration properties" doc:id="e2e05f62-b237-40e9-a430-5fef6c441a88" file="app.properties" />
+	<api-gateway:autodiscovery apiId="${auto-discovery.api-id}" ignoreBasePath="true" doc:name="API Autodiscovery" doc:id="31b34f5b-91b6-4c70-9f37-43c3891050b8" flowRef="apm-databin-apiFlow" />
+	<flow name="apm-databin-apiFlow" doc:id="7456cfcc-59cb-4f4e-bde2-c682f9462b7b" >
+		<http:listener doc:name="Listener" doc:id="5f14e28e-9c9e-45a4-a950-38b1cce30db8" config-ref="HTTP_Listener_config" path="/api/*" allowedMethods="POST">
+			<http:response statusCode="#[vars.httpStatus default 200]" >
+				<http:headers ><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
+			</http:response>
+			<http:error-response statusCode="#[vars.httpStatus default 500]" >
+				<http:headers ><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
+			</http:error-response>
+		</http:listener>
+		<logger level="INFO" doc:name="Logger" doc:id="e266420d-ea72-4f7e-9262-fbbe56b267bc" message="#['Received request from client $(attributes.headers.client_id default &quot;&quot;): $(attributes.requestUri)']"/>
+		<ee:transform doc:name="Transform Message" doc:id="cb9ce90f-fbd1-4601-acbd-fec118211d95" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="outboundHeaders" ><![CDATA[%dw 2.0
+output application/java
+---
+{
+	'x-correlation-id': correlationId
+}]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<set-variable value="#[201]" doc:name="Set Variable" doc:id="baba4915-98bf-4e0f-95b6-25fead24d2c8" variableName="httpStatus"/>
+	</flow>
+</mule>

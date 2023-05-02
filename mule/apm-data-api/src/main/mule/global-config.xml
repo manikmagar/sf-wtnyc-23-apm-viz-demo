@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:api-gateway="http://www.mulesoft.org/schema/mule/api-gateway"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/mule/api-gateway/current/mule-api-gateway.xsd">
+	
+    <http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="ba3dd241-4184-46b5-96d3-5b419353d7a0" basePath="/partnermanager" >
+		<http:request-connection protocol="HTTPS" host="anypoint.mulesoft.com" port="443" />
+		<http:default-headers >
+			<http:default-header key="Authorization" value="#[vars.bearer_token]" />
+		</http:default-headers>
+	</http:request-config>
+	<configuration-properties doc:name="Configuration properties" doc:id="486de375-9357-4c73-a234-aa6ed6e9ba08" file="application.properties" />
+	<api-gateway:autodiscovery apiId="${auto-discovery.api-id}" ignoreBasePath="true" doc:name="API Autodiscovery" doc:id="c25c1722-6271-400d-abb7-7633f0621843" flowRef="apm-data-api-main" />	
+	
+</mule>

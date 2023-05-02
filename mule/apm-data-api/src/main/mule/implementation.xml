@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:os="http://www.mulesoft.org/schema/mule/os" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd">
+	<ee:object-store-caching-strategy name="Caching_Strategy" doc:name="Caching Strategy" doc:id="798382ca-0897-4130-b731-ebb18a80c7cf" keyGenerationExpression="#[payload.username]" >
+		<os:private-object-store maxEntries="10" entryTtl="1" entryTtlUnit="HOURS" expirationInterval="30" />
+	</ee:object-store-caching-strategy>
+	<sub-flow name="get-auth-token" doc:id="1520d0ab-2ba1-4b60-80c4-ce2b8ff40e4b" >
+		<ee:transform doc:name="Transform Message" doc:id="99a10163-ca5c-4f57-ab2a-733e195eaeac">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    "username": p("apm.username"),
+    "password": p("apm.password")
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<ee:cache doc:name="Cache" doc:id="22dfaf83-0e3c-4f3c-a363-3f654571527d" cachingStrategy-ref="Caching_Strategy">
+			<http:request method="POST" doc:name="Request" doc:id="81d1e4a7-b693-4bc1-bd9d-32408d68cee5" config-ref="HTTP_Request_configuration" url="https://anypoint.mulesoft.com/accounts/login" sendCorrelationId="AUTO">
+		</http:request>
+			<set-payload value="#[payload.access_token as String]" doc:name="access token" doc:id="39219ea3-d296-4dcd-86f0-7492a1acbf04" />
+		</ee:cache>
+	</sub-flow>
+	<sub-flow name="impl-get-partners" doc:id="ab037367-f047-4731-a77a-f789b5721441" >
+		<flow-ref doc:name="Flow Reference" doc:id="af02b602-5e25-4eb0-b031-ca0751ac73b5" name="get-auth-token" target="bearer_token" targetValue="#['Bearer $(payload)']"/>
+		<http:request method="GET" doc:name="GET Partners" doc:id="b4deabb9-f748-4365-a9d3-5df7f2a5d141" config-ref="HTTP_Request_configuration" path="/partners/api/v1/organizations/${apm.orgId}/environments/${apm.envId}/partners" sendCorrelationId="AUTO" sendBodyMode="NEVER"/>
+	</sub-flow>
+	<sub-flow name="impl-get-activity" doc:id="251bc9c9-20f2-4204-9c80-232f6ca8deca" >
+		<flow-ref doc:name="Flow Reference" doc:id="a411f979-53d8-4afa-8897-9d354f68b16a" name="get-auth-token" target="bearer_token" targetValue="#['Bearer $(payload)']"/>
+		<http:request method="GET" doc:name="GET Activity" doc:id="784df3b9-3826-47cc-82ea-758132d13577" config-ref="HTTP_Request_configuration" path="/tracking/api/v1/organizations/${apm.orgId}/environments/${apm.envId}/activity/transmissions" sendBodyMode="NEVER">
+			<http:query-params ><![CDATA[#[output application/java
+---
+{
+	"pageSize" : 100,
+	"dateReceivedFrom" : ((now() - |PT15M|) >> "UTC") as String {format: "yyyy-MM-dd'T'HH:mm:ssxxx"},
+	"page" : 1
+}]]]></http:query-params>
+		</http:request>
+		<ee:transform doc:name="Transform Message" doc:id="b47a6cf5-f58e-48a8-a461-c671b43dcfd9" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload map {
+        "sourceDocType": {
+            "baseType": $.sourceDocType.baseType,
+            "name": $.sourceDocType.name
+        },
+        "targetDocType": {
+            "baseType": $.targetDocType.baseType,
+            "name": $.targetDocType.name,
+        },
+        "targetEndpoint": {
+            "endpointType": $.targetEndpoint.endpointType,
+        },
+        "partnerFrom": {
+            "name": $.partnerFrom.name,
+            "status": $.partnerFrom.status
+        },
+        "partnerTo": {
+            "name": $.partnerTo.name,
+            "status": $.partnerTo.status
+        },
+        "id": $.id,
+        "status": $.status,
+        "dateReceived": ($.dateReceived as DateTime) as String {format: "uuuu-MM-dd'T'HH:mm:ssX"},
+        "direction": $.direction,
+        "formatType": $.formatType,
+        "messageCount": $.messageCount,
+        "receivingEndpointType": $.receivingEndpointType
+    }]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</sub-flow>
+</mule>

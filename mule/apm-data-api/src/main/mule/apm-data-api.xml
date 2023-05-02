@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd ">
+    <http:listener-config name="apm-data-api-httpListenerConfig">
+        <http:listener-connection host="0.0.0.0" port="8081" />
+    </http:listener-config>
+    <apikit:config name="apm-data-api-config" api="resource::07a3d1b9-ba12-4b7e-8fc1-1dd541825428:apm-data-api:1.0.4:raml:zip:apm-data-api.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+    <flow name="apm-data-api-main">
+        <http:listener config-ref="apm-data-api-httpListenerConfig" path="/api/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:router config-ref="apm-data-api-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:BAD_REQUEST">
+                <ee:transform>
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Bad request"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">400</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform>
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:METHOD_NOT_ALLOWED">
+                <ee:transform>
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Method not allowed"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">405</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_ACCEPTABLE">
+                <ee:transform>
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not acceptable"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">406</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:UNSUPPORTED_MEDIA_TYPE">
+                <ee:transform>
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Unsupported media type"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">415</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_IMPLEMENTED">
+                <ee:transform>
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not Implemented"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">501</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="get:\partnermanager\partners:apm-data-api-config">
+        <logger level="INFO" message="get:\partnermanager\partners:apm-data-api-config" />
+        <flow-ref doc:name="Flow Reference" doc:id="0aaec8dc-86a0-44b9-a610-bb7006b60f09" name="impl-get-partners" />
+    </flow>
+    <flow name="get:\partnermanager\activity\transmissions:apm-data-api-config">
+		<logger level="INFO" message="get:\partnermanager\activity\transmissions:apm-data-api-config" />
+        <flow-ref doc:name="Flow Reference" doc:id="eb339fb6-404e-416a-a321-1df0fe368e82" name="impl-get-activity" />
+    </flow>
+    <flow name="apm-data-apiFlow" doc:id="47bd4e74-95a3-4fdf-b27d-2e8eefc991ed">
+        <http:listener doc:name="Listener" doc:id="2c95dd30-aac0-47ff-b577-0d2448c0fb8d" config-ref="apm-data-api-httpListenerConfig" path="/health" allowedMethods="GET" />
+        <flow-ref doc:name="Flow Reference" doc:id="8d1a9ee3-43ea-4233-a4bf-6961d76c5100" name="get:\health:apm-data-api-config" />
+    </flow>
+    <flow name="get:\health:apm-data-api-config" doc:id="eedeac57-7359-4957-832c-0a0239f9ffab">
+        <ee:transform doc:name="Transform Message" doc:id="72aca28e-740a-4364-9d3f-d9aa129eded4">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	status: 'up'
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\partnermanager\activity\transmissions\auto:apm-data-api-config">
+        <set-variable value="#[attributes.queryParams.count]" doc:name="Set Variable" doc:id="d804bb91-0a89-4a3a-af8b-1a685630071f" variableName="count"/>
+		<logger level="INFO" doc:name="Logger" doc:id="afd430ca-5cb4-4f59-9d82-f532734ac08b" message="#['Get $(vars.count) auto-generated transmission']"/>
+		<ee:transform doc:name="Transform Message" doc:id="e1ec37fd-549f-43f1-83e1-995377879f2f">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+var partnerConfigs = [
+    {
+        name: "Earth Retailer",    
+        inbound: {
+            direction: "INBOUND",
+        	receiveEndpoint: "SFTP",
+	        formatType: 'X12',
+	        targetEndpoint: "HTTP",
+	        sourceDocTypes: ["X12-4010-850", "X12-4010-860"],
+	        tagetDocType: "Orders-JSON"
+        },
+        outbound: {
+            direction: "OUTBOUND",
+        	receiveEndpoint: "HTTP",
+	        formatType: 'X12',
+	        targetEndpoint: "SFTP",
+	        sourceDocTypes: ["Invoice-JSON","Invoice-JSON"],
+	        tagetDocType: "X12-4010-810"
+        }
+    },
+    {
+        name: "Mars Sports",
+        inbound: {
+            direction: "INBOUND",
+        	receiveEndpoint: "SFTP",
+	        formatType: 'XML',
+	        targetEndpoint: "HTTP",
+	        sourceDocTypes: ["Orders-XML", "Orders-Adj"],
+	        tagetDocType: "Orders-JSON"
+        },
+        outbound: {
+            direction: "OUTBOUND",
+        	receiveEndpoint: "SFTP",
+	        formatType: 'XML',
+	        targetEndpoint: "HTTP",
+	        sourceDocTypes: ["Invoice-JSON","Invoice-JSON"],
+	        tagetDocType: "Invoice-XML"
+        }
+    },
+    {
+        name: "Mercury Aerobics",
+        inbound: {
+            direction: "INBOUND",
+        	receiveEndpoint: "AS2",
+	        formatType: 'X12',
+    	    targetEndpoint: "HTTP",
+        	sourceDocTypes: ["X12-4010-850", "X12-4010-860"],
+	        tagetDocType: "Orders-JSON"
+	   	},
+        outbound: {
+            direction: "OUTBOUND",
+        	receiveEndpoint: "HTTP",
+	        formatType: 'X12',
+	        targetEndpoint: "AS2",
+	        sourceDocTypes: ["Invoice-JSON","Invoice-JSON"],
+	        tagetDocType: "X12-4010-810"
+        }
+    },
+    {
+        name: "Sun Systems",
+        inbound: {
+            direction: "INBOUND",
+        	receiveEndpoint: "HTTP",
+	        formatType: 'X12',
+    	    targetEndpoint: "HTTP",
+       		sourceDocTypes: ["X12-4010-850", "X12-4010-860"],
+	        tagetDocType: "Orders-JSON"
+    	},
+        outbound: {
+            direction: "OUTBOUND",
+        	receiveEndpoint: "HTTP",
+	        formatType: 'X12',
+	        targetEndpoint: "HTTP",
+	        sourceDocTypes: ["Invoice-JSON","Invoice-JSON"],
+	        tagetDocType: "X12-4010-810"
+        }
+    }
+]
+var hostPartner = "Space Enterprise"
+var daysBack:Number =  365 * 3
+---
+(1 to (vars.count default 50)) map (cnt, idx) -> do {
+    var partner = partnerConfigs[randomInt(4)]
+    var transmission = if( mod(cnt,2) == 0 ) partner.inbound else partner.outbound
+    var srcDoc = transmission.sourceDocTypes[randomInt(2)]
+    ---    
+    {
+        "sourceDocType": {
+            "baseType": srcDoc,
+            "name":srcDoc 
+        },
+        "targetDocType": {
+            "baseType": transmission.tagetDocType,
+            "name": transmission.tagetDocType,
+        },
+        "targetEndpoint": {
+            "endpointType": transmission.targetEndpoint,
+        },
+        "partnerFrom": {
+            "name": partner.name,
+            "status": 'ACTIVE'
+        },
+        "partnerTo": {
+            "name": hostPartner,
+            "status":'ACTIVE'
+        },
+        "id": uuid(),
+        "status": if( mod(cnt,10) == 0) 'ERRORED' else 'DELIVERED',
+        "dateReceived": ((now() >> "UTC") - ("P$(randomInt(daysBack))D" as Period)) as String {format: "uuuu-MM-dd'T'HH:mm:ssX"},
+        "direction": transmission.direction,
+        "formatType": transmission.formatType,
+        "messageCount": randomInt(100),
+        "receivingEndpointType":transmission.receiveEndpoint
+    }
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+</mule>

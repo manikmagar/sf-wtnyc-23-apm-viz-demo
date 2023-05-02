@@ -1,0 +1,53 @@
+#%RAML 1.0
+title: apm-data-api
+description: APM Data API
+version: v1
+
+securitySchemes:
+  basic:
+    description: |
+      Basic Authentication with Client Id/Secret.
+    type: Basic Authentication
+
+/partnermanager:
+  /activity:
+    /transmissions:
+      get:
+        displayName: Get Transmissions
+        responses:
+          200:
+            body:
+              application/json:
+                type: array
+                items:
+                  type: !include types/transmission.raml
+      /auto:
+        get:
+          displayName: Auto generated transmission samples with random data
+          queryParameters:
+            count:
+              displayName: Number of records
+              type: number
+              format: int
+          responses:
+            200:
+              body:
+                application/json:
+                  type: array
+                  items:
+                    type: !include types/transmission.raml
+  /partners:
+    get:
+      displayName: Get partners
+      responses:
+        200:
+          body:
+            application/json:
+/health:
+  get:
+    responses:
+      200:
+        body:
+          application/json:
+                          
+                    
